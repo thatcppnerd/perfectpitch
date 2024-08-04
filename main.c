@@ -110,7 +110,7 @@ int main_menu()
     wmove(win, 0, ceil(cols / 2) - 10);
     wprintw(win, title);
 
-    int select = 0;
+    unsigned int select = 0;
     static const char* menu_item[4] =
     {
         "Play", "Options", "About", "Quit"
@@ -142,8 +142,15 @@ int main_menu()
         // wait for keyboard input
         int input = getch();
         
-        
-        if(input ==
+        if(input == KEY_UP) select--;
+        else if(input == KEY_DOWN) select++;
+        else if(input == KEY_ENTER) // option has been chosen
+        {
+            switch(select)
+            {
+                case 0
+            }
+        }
     }
 
 
