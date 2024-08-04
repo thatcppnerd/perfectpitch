@@ -117,7 +117,7 @@ int main_menu()
     int select = 0;
     static const char* menu_item[4] =
     {
-        "Play", "Options", "About", Quit"
+        "Play", "Options", "About", "Quit"
     };
     
     while(1) // menu loop
