@@ -64,13 +64,6 @@ int main(int argc, char* argv[])
         curs_set(0);            // make cursor invisible
         keypad(stdscr, TRUE);   // enable arrow keys
         
-        // setup color
-        start_color();
-        
-        init_pair(1, COLOR_WHITE, COLOR_BLACK);
-        init_pair(2, COLOR_BLACK, COLOR_WHITE);
-        
-        
         // goto main menu
         main_menu();
 
