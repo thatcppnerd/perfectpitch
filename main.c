@@ -7,6 +7,7 @@
 #define MIN_COLS 40
 #define MIN_ROWS 20  
 
+
 WINDOW* win = NULL;     // containing window that holds the border/title 
 WINDOW* content = NULL; // where the content goes :>
 
@@ -15,6 +16,7 @@ int difficulty = -1;
 int cols = -1; // width
 int rows = -1; // height
 
+int init();
 int main_menu();
 
 int main(int argc, char* argv[])
@@ -30,12 +32,8 @@ int main(int argc, char* argv[])
     }
 
 
-    // start the show
-    win = initscr();
-
-    if (win == NULL) // check if the star role isn't vacant
+    if (init() != 0)
     {
-        printf("Ncurses failed to initialize.\n"); // She left?!
         return 1;
     }
 
@@ -89,6 +87,26 @@ int main(int argc, char* argv[])
     endwin();
     refresh();
 
+    return 0;
+}
+
+int init()
+{
+    // start the show
+    win = initscr();
+
+    if (win == NULL) // check if the star role isn't vacant
+    {
+        printf("Ncurses failed to initialize.\n"); // She left?!
+        return 1;
+    }
+    
+    // initialize color pairs
+    start_color();
+        
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    init_pair(2, COLOR_BLACK, COLOR_WHITE);
+    
     return 0;
 }
 
