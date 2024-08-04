@@ -115,15 +115,35 @@ int main_menu()
     wprintw(win, title);
 
     int select = 0;
+    static const char* menu_item[4] =
+    {
+        "Play", "Options", "About", Quit"
+    };
+    
     while(1) // menu loop
     {
         wmove(content, 0, 0);
         wprintw(content, "== MAIN MENU =="); 
         
-        if(select == 0)
+        // print menu items
+        for (int i = 0 ; i < 4 ; i++)
         {
-            wmove(content, 2, 0);
+            wmove(content, 2 + i, 0);
+            if (select == i) // highlight if selected
+            {
+                attron(COLOR_PAIR(2));
+            }
+            else // print normally if not
+            {
+                attroff(COLOR_PAIR(2));
+            }
+            
+            wprintw(content, "%s", menu_item[i]);
         }
+        
+        wrefresh(content);
+        
+        int input = 0;
     }
 
 
