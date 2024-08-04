@@ -71,10 +71,6 @@ int main(int argc, char* argv[])
         delwin(content);
     }
 
-    
-
-    
-
     // end the show
     delwin(win);
     endwin();
@@ -143,15 +139,16 @@ int main_menu()
         
         wrefresh(content);
         
-        int input = 0;
+        // wait for keyboard input
+        int input = getch();
+        
+        
+        if(input ==
     }
 
 
 
     refresh();
-    
-    
-
 
     getch();
     return 0;
