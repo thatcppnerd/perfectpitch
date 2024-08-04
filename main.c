@@ -99,6 +99,7 @@ int init()
         
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_BLACK, COLOR_WHITE);
+    attron(COLOR_PAIR(1)); // pair 1 is default
     
     return 0;
 }
@@ -106,23 +107,24 @@ int init()
 int main_menu()
 {
     const char* title = "PERFECT PITCH"; // 13 chars wide
-
+    
     // draw screen border with 'PERFECT PITCH' top-center
     border('|', '|', '-', '-', '+', '+', '+', '+');
 
     wmove(win, 0, ceil(cols / 2) - 10);
     wprintw(win, title);
 
-    // draw select screen
-    wmove(content, 0, 0);
-    wprintw(content, "== MAIN MENU =="); 
-    
-    wmove(content, 2, 0);
-    
-
     int select = 0;
-    
-    
+    while(1) // menu loop
+    {
+        wmove(content, 0, 0);
+        wprintw(content, "== MAIN MENU =="); 
+        
+        if(select == 0)
+        {
+            wmove(content, 2, 0);
+        }
+    }
 
 
 
