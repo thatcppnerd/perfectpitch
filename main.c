@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <math.h>
 
 #include "lib/settings.h"
 
@@ -32,7 +33,7 @@ int init();
 int main_menu();
     int play();
     int settings();
-        int sound_test();
+        int sound_test(float freq);
     int about();
 
 void quit();
@@ -97,7 +98,7 @@ int init()
     // start the show
     win = initscr();
 
-    if (win == NULL) // check if the star role isn't vacant
+    if (win == NULL) // check if the star roles aren't vacant
     {
         printf("Ncurses failed to initialize.\n"); // She left?!
         return 1;
@@ -128,6 +129,11 @@ int init()
     return 0;
 }
 
+int play()
+{
+    return 0;
+}
+
 int main_menu()
 {
     // const char* title = "PERFECT PITCH"; // 13 chars wide
@@ -139,7 +145,7 @@ int main_menu()
     border('|', '|', '-', '-', '+', '+', '+', '+');
 
     wmove(win, 0, ceil(cols / 2) - 7);
-    wprintw(win, "PITCH PERFECT");
+    wprintw(win, "PERFECT PITCH");
 
   
     
@@ -205,7 +211,7 @@ int main_menu()
 
 int settings()
 {
-    const int settings_num_items = 3;
+    const unsigned int settings_num_items = 3;
     const char* settings_menu_item[3] = { "Volume", "Sound Test", "Back" };
     unsigned int select = 0;
 
@@ -248,7 +254,7 @@ int settings()
 
         wrefresh(content);
 
-        usleep(50000);
+        // usleep(50000);
 
         int input = getch();
 
@@ -279,11 +285,11 @@ int settings()
                         // get inputs
                         if (input == KEY_LEFT && 0.f < settings_data.volume) // decrease
                         {
-                            settings_data.volume -= .5f;
+                            settings_data.volume -= .5;
                         }
                         else if (input == KEY_RIGHT && 100.f > settings_data.volume) // increase
                         {
-                            settings_data.volume += .5f;
+                            settings_data.volume += .5;
                         }
                         else if (input == KEY_ENTER || input == '\n') // done editing
                         {
@@ -293,7 +299,7 @@ int settings()
                 break;
                 
                 case 1:
-
+                    sound_test(440.f);
                 break;
 
                 case 2: // quit
@@ -314,13 +320,37 @@ int settings()
     return 0;
 }
 
-int sound_test()
+int sound_test(float freq)
 {
-    while(1)
+    SDL_AudioDeviceID audio_device;
+
+    SDL_AudioSpec audio_spec;
+    SDL_zero(audio_spec);
+
+    audio_spec.freq = 44100;
+    audio_spec.format = AUDIO_S16SYS;
+    audio_spec.channels = 1;
+    audio_spec.samples = 2048;
+    audio_spec.callback = NULL;
+
+    audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
+
+    double x = 0.;
+    for(int s = 0 ; s < (audio_spec.freq * 3) ; s++)
     {
-        werase(content);
-        wmove(content, 0, 0);
+        x += freq/44100.f;
+
+        short sample = sin((2. * M_PI) * x) * (300. * settings_data.volume);
+        SDL_QueueAudio(audio_device, &sample, sizeof(short));
     }
+
+    SDL_PauseAudioDevice(audio_device, 0);
+
+    SDL_Delay(3000);
+
+    SDL_CloseAudioDevice(audio_device);
+
+    return 0;
 }
 
 int about()
@@ -328,8 +358,8 @@ int about()
     werase(content);
     wmove(content, 0, 0);
 
-    waddstr(content, "Pitch Perfect was written as a quick, easy way for me to ear train myself, while also giving me an excuse to program something using ncurses and C, haha.\n\n");
-    waddstr(content, "Pitch Perfect was written between 8/2/24 to 8/5/24.\n\n");
+    waddstr(content, "Perfect Pitch was written as a quick, easy way for me to ear train myself, while also giving me an excuse to program something using ncurses and C, haha.\n\n");
+    waddstr(content, "Perfect Pitch was written between 8/2/24 to 8/5/24.\n\n");
 
     // draw 'Back' selection(it is the only selection)
     wattron(content, COLOR_PAIR(2));

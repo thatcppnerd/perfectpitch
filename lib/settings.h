@@ -3,7 +3,7 @@
 
 struct __settings
 {
-    float volume;
+    double volume;
 };
 
 typedef struct __settings settings_t;
