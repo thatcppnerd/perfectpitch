@@ -9,10 +9,12 @@
 #include <errno.h>
 #include <math.h>
 
-#include "lib/settings.h"
+#include "lib/pp.h"
 
 #define MIN_COLS 40
 #define MIN_ROWS 20
+
+#define MAX_DIFFICULTY 5
 
 
 WINDOW* win = NULL;     // containing window that holds the border/title 
@@ -23,18 +25,19 @@ int difficulty = -1;
 int cols = -1; // width
 int rows = -1; // height
 
-settings_t settings_data =   {
-                            .volume = 100.f
-                        };
+settings_t settings_data =  {
+                                .volume = 100.f
+                            };
 
 
 int init();
 
 int main_menu();
-    int play();
-    int settings();
+    int play_menu();
+        int game_start(gamestate_t game_state);
+    int settings_menu();
         int sound_test(float freq);
-    int about();
+    int about_menu();
 
 void quit();
 
@@ -49,6 +52,10 @@ int main(int argc, char* argv[])
     else if (argc == 2) // if user specified difficulty
     {
         difficulty = atoi(argv[1]);
+    }
+    else
+    {
+        difficulty = 0;
     }
 
 
@@ -116,8 +123,8 @@ int init()
     // do extra stuff for setup
     curs_set(0);            // make cursor invisible
     keypad(stdscr, TRUE);   // enable arrow keys
-    noecho();
-    cbreak();
+    noecho();               // keep user keypresses from making junk on screen
+    cbreak();               // 
 
     
     // initialize color pairs
@@ -129,15 +136,11 @@ int init()
     return 0;
 }
 
-int play()
-{
-    return 0;
-}
-
 int main_menu()
 {
     // const char* title = "PERFECT PITCH"; // 13 chars wide
-    static const char* main_menu_item[4] = { "Play", "Settings", "About", "Quit" };
+    const unsigned int main_menu_num_items = 4;
+    const char* main_menu_item[] = { "Play", "Settings", "About", "Quit" };
 
     unsigned int select = 0;
 
@@ -155,7 +158,7 @@ int main_menu()
         wprintw(content, "== MAIN MENU =="); 
         
         // print menu items
-        for (int i = 0 ; i < 4 ; i++)
+        for (int i = 0 ; i < main_menu_num_items ; i++)
         {
             wmove(content, 2 + i, 0);
             if (select == i) // highlight if selected
@@ -177,24 +180,20 @@ int main_menu()
         // check if 
         if (input == KEY_UP) select--;
         else if (input == KEY_DOWN) select++;
-        
-        // keep select in bounds
-        select %= 4U;
-
-        if(input == KEY_ENTER || input == '\n') // option has been chosen
+        else if(input == KEY_ENTER || input == '\n') // option has been chosen
         {
             switch(select)
             {
-                case 0: // play
-
+                case 0: // play_menu
+                    play_menu();
                 break;
 
                 case 1: // settings
-                    settings();
+                    settings_menu();
                 break;
 
-                case 2: // about 
-                    about();
+                case 2: // about_menu 
+                    about_menu();
                 break;
 
                 case 3: // quit
@@ -203,17 +202,136 @@ int main_menu()
             }
         }
 
+        // keep select in bounds
+        select %= main_menu_num_items;
+
         werase(content);
     }
 
     return 0;
 }
 
-int settings()
+int play_menu()
 {
-    const unsigned int settings_num_items = 3;
+    const int play_menu_num_items = 3;
+    const char* play_menu_item[3] = {"Start Game", "Difficulty", "Back"};
+
+    const char* difficulty_desc[MAX_DIFFICULTY] = {"Naturals", "Accidentals", "Naturals & Accidentals", "Chords", "Advanced Chords"};
+    unsigned int select = 0;
+
+    werase(content);
+
+    // menu loop
+    while(1)
+    {
+        wmove(content, 0, 0);
+
+        wprintw(content, "== PLAY ==");
+
+        for (int i = 0 ; i < play_menu_num_items ; i++)
+        {
+            wmove(content, 2 + i, 0);
+
+            // highlight if selected
+            if(select == i)
+            {
+                wattron(content, COLOR_PAIR(2));
+            }
+
+            wprintw(content, "%s", play_menu_item[i]);
+
+            wattroff(content, COLOR_PAIR(2));
+
+            switch(i)
+            {
+                case 1: // difficulty
+                    wprintw(content, ": %u (%s)", difficulty, difficulty_desc[difficulty]);
+                break;
+
+                default: break;
+            }
+        }
+
+        wrefresh(content);
+
+        // inputs
+        int input = getch();
+
+        if (input == KEY_UP) select--;
+        else if (input == KEY_DOWN) select++;
+        else if (input == KEY_ENTER || input == '\n')
+        {   
+            switch(select)
+            {
+                case 0: // start game
+                    gamestate_t game_state =    {
+                                                    .difficulty = difficulty,
+                                                    .score = 0,
+                                                    .correct = 0,
+                                                    .incorrect = 0
+                                                };
+                    game_start(game_state);
+                break;
+
+                case 1: // difficulty
+
+                    // difficulty edit loop
+                    while(1)
+                    {
+                        wmove(content, 3, 0);   // move to difficulty
+                        wclrtoeol(content);     // clear line
+
+                        wprintw(content, "%s: ", play_menu_item[1]);
+
+                        wattron(content, COLOR_PAIR(2));
+                        wprintw(content, "%u (%s)", difficulty, difficulty_desc[difficulty]);
+                        wattroff(content, COLOR_PAIR(2));
+
+                        wrefresh(content);
+
+                        int input = getch();
+
+                        if (input == KEY_LEFT && difficulty > 0) 
+                        {
+                            difficulty--;
+                        }
+                        else if (input == KEY_RIGHT && difficulty < (MAX_DIFFICULTY - 1)) 
+                        {
+                            difficulty++;
+                        }
+                        else if (input == KEY_ENTER || input == '\n') 
+                        {
+                            break; 
+                        }
+                    }
+                break;
+
+                case 2: // back
+                    return 0;
+                break;
+            }
+        }
+
+        // keep in bounds
+        select %= play_menu_num_items;
+
+        werase(content);
+
+    }
+    return 0;
+}
+
+int game_start(gamestate_t game_state)
+{
+    return 0;
+}
+
+int settings_menu()
+{
+    const unsigned int settings_menu_num_items = 3;
     const char* settings_menu_item[3] = { "Volume", "Sound Test", "Back" };
     unsigned int select = 0;
+
 
 
     // menu loop
@@ -227,7 +345,7 @@ int settings()
         wprintw(content, "== SETTINGS ==");
 
         // print menu
-        for (int i = 0 ; i < settings_num_items ; i++)
+        for (int i = 0 ; i < settings_menu_num_items ; i++)
         {
             wmove(content, i + 2, 0);
 
@@ -266,14 +384,15 @@ int settings()
             // reprint selected item as normal and highlight the value to show it is being edited
             switch(select)
             {
-                case 0: // volume         
+                case 0: // volume
+
                     // value edit loop
                     while(1)
                     {
                         wclrtoeol(content); // clear line
-                        mvwprintw(content, 2, 0, "%s: ", settings_menu_item[0]); // print over name with un-highlighted version
+                        mvwprintw(content, 2, 0, "%s: ", settings_menu_item[0]); // reprint name with un-highlighted version
 
-                        // print over value with highlighted version
+                        // reprint value with highlighted version
                         wattron(content, COLOR_PAIR(2));
                         wprintw(content, "%.1f", settings_data.volume);
                         wattroff(content, COLOR_PAIR(2));
@@ -303,7 +422,6 @@ int settings()
                 break;
 
                 case 2: // quit
-                    wclear(content);
                     wrefresh(content);
 
                     return 0; // 
@@ -313,7 +431,7 @@ int settings()
         }
         
         // keep select in bounds
-        select %= settings_num_items;
+        select %= settings_menu_num_items;
 
     }
 
@@ -353,7 +471,7 @@ int sound_test(float freq)
     return 0;
 }
 
-int about()
+int about_menu()
 { 
     werase(content);
     wmove(content, 0, 0);
