@@ -1,7 +1,8 @@
-main: main.c
+main: main.c 
 	gcc main.c -o main \
-	-lncurses \
+	-lncurses -lSDL2 -lSDL2_mixer \
 	-Wall
+
 
 clean:
 	rm main

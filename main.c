@@ -1,11 +1,17 @@
 #include <ncurses.h>
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 
 #include <stdio.h>
-#include <assert.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
+
+#include "lib/settings.h"
 
 #define MIN_COLS 40
-#define MIN_ROWS 20  
+#define MIN_ROWS 20
 
 
 WINDOW* win = NULL;     // containing window that holds the border/title 
@@ -16,8 +22,21 @@ int difficulty = -1;
 int cols = -1; // width
 int rows = -1; // height
 
+settings_t settings_data =   {
+                            .volume = 100.f
+                        };
+
+
 int init();
+
 int main_menu();
+    int play();
+    int settings();
+        int sound_test();
+    int about();
+
+void quit();
+
 
 int main(int argc, char* argv[])
 {
@@ -60,10 +79,6 @@ int main(int argc, char* argv[])
         // create content window, now error checking is complete
         content = subwin(win, rows - 2, cols - 2, 1, 1);
 
-        // do extra stuff for setup
-        curs_set(0);            // make cursor invisible
-        keypad(stdscr, TRUE);   // enable arrow keys
-        
         // goto main menu
         main_menu();
 
@@ -72,9 +87,7 @@ int main(int argc, char* argv[])
     }
 
     // end the show
-    delwin(win);
-    endwin();
-    refresh();
+    quit();
 
     return 0;
 }
@@ -89,32 +102,46 @@ int init()
         printf("Ncurses failed to initialize.\n"); // She left?!
         return 1;
     }
+    else if (SDL_Init(SDL_INIT_AUDIO) != 0)
+    {
+        printf("SDL failed to intiialize.\n");
+        return 1;
+    }
+    else if (Mix_Init(MIX_INIT_MP3) != MIX_INIT_MP3)
+    {
+        printf("Mixer failed to initialize.\n");
+    }
+
+    // do extra stuff for setup
+    curs_set(0);            // make cursor invisible
+    keypad(stdscr, TRUE);   // enable arrow keys
+    noecho();
+    cbreak();
+
     
     // initialize color pairs
     start_color();
         
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_BLACK, COLOR_WHITE);
-    attron(COLOR_PAIR(1)); // pair 1 is default
     
     return 0;
 }
 
 int main_menu()
 {
-    const char* title = "PERFECT PITCH"; // 13 chars wide
-    
+    // const char* title = "PERFECT PITCH"; // 13 chars wide
+    static const char* main_menu_item[4] = { "Play", "Settings", "About", "Quit" };
+
+    unsigned int select = 0;
+
     // draw screen border with 'PERFECT PITCH' top-center
     border('|', '|', '-', '-', '+', '+', '+', '+');
 
-    wmove(win, 0, ceil(cols / 2) - 10);
-    wprintw(win, title);
+    wmove(win, 0, ceil(cols / 2) - 7);
+    wprintw(win, "PERFECT PITCH");
 
-    unsigned int select = 0;
-    static const char* menu_item[4] =
-    {
-        "Play", "Options", "About", "Quit"
-    };
+  
     
     while(1) // menu loop
     {
@@ -127,36 +154,210 @@ int main_menu()
             wmove(content, 2 + i, 0);
             if (select == i) // highlight if selected
             {
-                attron(COLOR_PAIR(2));
+                wattron(content, COLOR_PAIR(2));
             }
-            else // print normally if not
-            {
-                attroff(COLOR_PAIR(2));
-            }
+            // if not, print normally
             
-            wprintw(content, "%s", menu_item[i]);
+            wprintw(content, "%s", main_menu_item[i]);
+            wattroff(content, COLOR_PAIR(2));
         }
         
+        // show 
         wrefresh(content);
         
         // wait for keyboard input
         int input = getch();
         
-        if(input == KEY_UP) select--;
-        else if(input == KEY_DOWN) select++;
-        else if(input == KEY_ENTER) // option has been chosen
+        // check if 
+        if (input == KEY_UP) select--;
+        else if (input == KEY_DOWN) select++;
+        
+        // keep select in bounds
+        select %= 4U;
+
+        if(input == KEY_ENTER || input == '\n') // option has been chosen
         {
             switch(select)
             {
-                case 0
+                case 0: // play
+
+                break;
+
+                case 1: // settings
+                    settings();
+                break;
+
+                case 2: // about 
+                    about();
+                break;
+
+                case 3: // quit
+                    return 0;
+                break;
             }
         }
+
+        werase(content);
     }
 
-
-
-    refresh();
-
-    getch();
     return 0;
+}
+
+int settings()
+{
+    const int settings_num_items = 3;
+    const char* settings_menu_item[3] = { "Volume", "Sound Test", "Back" };
+    unsigned int select = 0;
+
+
+    // menu loop
+    while(1)
+    {   
+        // reset screen 
+        wclear(content);
+        wmove(content, 0, 0);
+
+        // menu titles
+        wprintw(content, "== SETTINGS ==");
+
+        // print menu
+        for (int i = 0 ; i < settings_num_items ; i++)
+        {
+            wmove(content, i + 2, 0);
+
+            // highlight selected item
+            if (select == i)
+            {
+                wattron(content, COLOR_PAIR(2));
+            }
+
+            // print setting name
+            wprintw(content, "%s", settings_menu_item[i]);
+            wattroff(content, COLOR_PAIR(2));
+
+            // print value of setting
+            switch(i)
+            {
+                case 0: // volume
+                    wprintw(content, ": %.1f", settings_data.volume);
+                break;
+
+                default: break;
+            }
+        }
+
+        wrefresh(content);
+
+        usleep(50000);
+
+        int input = getch();
+
+        // get inputs
+        if (input == KEY_UP) select--;
+        else if (input == KEY_DOWN) select++;
+        else if (input == KEY_ENTER || input == '\n')
+        {   
+            // reprint selected item as normal and highlight the value to show it is being edited
+            switch(select)
+            {
+                case 0: // volume         
+                    // value edit loop
+                    while(1)
+                    {
+                        wclrtoeol(content); // clear line
+                        mvwprintw(content, 2, 0, "%s: ", settings_menu_item[0]); // print over name with un-highlighted version
+
+                        // print over value with highlighted version
+                        wattron(content, COLOR_PAIR(2));
+                        wprintw(content, "%.1f", settings_data.volume);
+                        wattroff(content, COLOR_PAIR(2));
+
+                        wrefresh(content);
+
+                        int input = getch();
+
+                        // get inputs
+                        if (input == KEY_LEFT && 0.f < settings_data.volume) // decrease
+                        {
+                            settings_data.volume -= .5f;
+                        }
+                        else if (input == KEY_RIGHT && 100.f > settings_data.volume) // increase
+                        {
+                            settings_data.volume += .5f;
+                        }
+                        else if (input == KEY_ENTER || input == '\n') // done editing
+                        {
+                            break; // exit edit loop
+                        }
+                    }
+                break;
+                
+                case 1:
+
+                break;
+
+                case 2: // quit
+                    wclear(content);
+                    wrefresh(content);
+
+                    return 0; // 
+                break;
+                    
+            }
+        }
+        
+        // keep select in bounds
+        select %= settings_num_items;
+
+    }
+
+    return 0;
+}
+
+int sound_test()
+{
+    while(1)
+    {
+        werase(content);
+        wmove(content, 0, 0);
+    }
+}
+
+int about()
+{ 
+    werase(content);
+    wmove(content, 0, 0);
+
+    waddstr(content, "Pitch Perfect was written as a quick, easy way for me to ear train myself, while also giving me an excuse to program something using ncurses and C, haha.\n\n");
+    waddstr(content, "Pitch Perfect was written between 8/2/24 to 8/5/24.\n\n");
+
+    // draw 'Back' selection(it is the only selection)
+    wattron(content, COLOR_PAIR(2));
+    wprintw(content, "Back");
+    wattroff(content, COLOR_PAIR(2));
+
+    wrefresh(content);
+
+    // usleep(500000); // give small delay in input (0.4s)
+
+    int input = 0;
+    do
+    {
+        input = getch();
+    }
+    while(input != KEY_ENTER && input != '\n');
+
+    werase(content);
+
+    wrefresh(content);
+
+    return 0;
+}
+
+void quit()
+{
+    // end the show
+    delwin(win);
+    endwin();
+    refresh();
 }
