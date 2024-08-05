@@ -139,7 +139,7 @@ int main_menu()
     border('|', '|', '-', '-', '+', '+', '+', '+');
 
     wmove(win, 0, ceil(cols / 2) - 7);
-    wprintw(win, "PERFECT PITCH");
+    wprintw(win, "PITCH PERFECT");
 
   
     
@@ -214,7 +214,7 @@ int settings()
     while(1)
     {   
         // reset screen 
-        wclear(content);
+        werase(content);
         wmove(content, 0, 0);
 
         // menu titles
