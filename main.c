@@ -33,11 +33,11 @@ settings_t settings_data =  {
 int init();
 
 int main_menu();
-    int play_menu();
-        int game_start(gamestate_t game_state);
-    int settings_menu();
-        int sound_test(float freq);
-    int about_menu();
+int play_menu();
+int game_start(gamestate_t game_state);
+int settings_menu();
+int sound_test(float freq);
+int about_menu();
 
 void quit();
 
@@ -323,6 +323,7 @@ int play_menu()
 
 int game_start(gamestate_t game_state)
 {
+
     return 0;
 }
 
@@ -476,7 +477,7 @@ int about_menu()
     werase(content);
     wmove(content, 0, 0);
 
-    waddstr(content, "Perfect Pitch was written as a quick, easy way for me to ear train myself, while also giving me an excuse to program something using ncurses and C, haha.\n\n");
+    waddstr(content, "Perfect Pitch was written as a quick, easy way for me to ear train myself, while also giving me an excuse to program something using ncurses, SDL, and C, haha.\n\n");
     waddstr(content, "Perfect Pitch was written between 8/2/24 to 8/5/24.\n\n");
 
     // draw 'Back' selection(it is the only selection)
