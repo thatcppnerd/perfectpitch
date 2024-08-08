@@ -1,10 +1,13 @@
 #ifndef __PP_H__
 #define __PP_H__
 
+#include <stdbool.h>
+
 struct __settings
 {
-    double volume;
-};
+    double  volume;
+    bool    debug_enabled;
+};  
 
 struct __gamestate
 {
@@ -13,6 +16,8 @@ struct __gamestate
     
     unsigned int correct;
     unsigned int incorrect;
+
+    unsigned int time;
 };
 
 typedef struct __settings   settings_t;
